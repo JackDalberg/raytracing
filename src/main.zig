@@ -59,7 +59,19 @@ fn rayColor(r: Ray) Color {
     // TODO: Make this work in a non bad way.
     //
     //const unit_direction = vec.unit(r.direction);
+    if (hitSphere(Point{0.0, 0.0, -1.0}, 0.5, r)) {
+        return Color{1.0, 0.0, 0.0};
+    }
     const unit_direction = r.direction / @as(Vec3, @splat(@sqrt(@reduce(.Add, r.direction * r.direction))));
     const a = 0.5 * (unit_direction[1] + 1.0);
     return Color{1.0, 1.0, 1.0} * vec.vec3(1.0 - a) + Color{0.5, 0.7, 1.0} * vec.vec3(a);
+}
+
+fn hitSphere(center: Point, radius: f64, r: Ray) bool {
+    const oc = center - r.origin;
+    const a = vec.dot(r.direction, r.direction);
+    const b = -2.0 * vec.dot(r.direction, oc);
+    const c = vec.dot(oc, oc) - radius * radius;
+    const discriminant = b*b - 4*a*c;
+    return (discriminant >= 0);
 }
