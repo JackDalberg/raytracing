@@ -22,12 +22,15 @@ pub fn main(init: std.process.Init) !void {
     var buf: [1024]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(io, &buf);
     var log_writer = std.Io.File.stderr().writer(io, &.{});
+    var prng = std.Random.DefaultPrng.init(37);
     const w = &file_writer.interface;
     const log = &log_writer.interface;
+    const rand = prng.random();
 
     const camera_opts = Camera.Options{
         .w = w,
         .log = log,
+        .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
     };

@@ -5,9 +5,9 @@ pub const Point = @Vector(3, f64);
 pub const Color = @Vector(3, f64);
 
 pub fn writeColor(w: *std.Io.Writer, color: Color) !void {
-    const r = @as(u8, @intFromFloat(255.999 * color[0]));
-    const g = @as(u8, @intFromFloat(255.999 * color[1]));
-    const b = @as(u8, @intFromFloat(255.999 * color[2]));
+    const r = @as(u8, @intFromFloat(255.999 * @min(0.99, @max(0.0, color[0]))));
+    const g = @as(u8, @intFromFloat(255.999 * @min(0.99, @max(0.0, color[1]))));
+    const b = @as(u8, @intFromFloat(255.999 * @min(0.99, @max(0.0, color[2]))));
     try w.print("{} {} {}\n", .{ r, g, b});
 }
 

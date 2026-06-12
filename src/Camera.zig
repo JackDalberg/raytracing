@@ -13,6 +13,8 @@ const Color = vec.Color;
 
 w: *std.Io.Writer,
 log: *std.Io.Writer,
+rand: std.Random,
+
 aspect_ratio: f64,
 image_width: u16,
 image_height: u16,
@@ -20,6 +22,8 @@ center: Point,
 pixel00: Point,
 pixel_delta_u: Vec3,
 pixel_delta_v: Vec3,
+samples_per_pixel: u16,
+pixel_samples_scale: f64,
 
 const Camera = @This();
 
@@ -27,19 +31,27 @@ const Camera = @This();
 pub const Options = struct {
     w: *std.Io.Writer,
     log: *std.Io.Writer,
+    rand: std.Random,
+
     aspect_ratio: f64 = 1.0,
     image_width: u16 = 100,
+    center: Point = .{ 0.0, 0.0, 0.0 },
+    samples_per_pixel: u16 = 10,
 };
 
 pub fn init(opts: Options) Camera {
-    const aspect_ratio = opts.aspect_ratio;
-    const image_width = opts.image_width;
     const w = opts.w;
     const log = opts.log;
+    const rand = opts.rand;
 
+    const aspect_ratio = opts.aspect_ratio;
+    const image_width = opts.image_width;
     const image_height: u16 = @max(1, @as(u16, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio)));
-    const center = Vec3{ 0.0, 0.0, 0.0};
-    
+    const center = opts.center;
+
+    const pixel_samples_scale: f64 = 1.0 / @as(f64, @floatFromInt(opts.samples_per_pixel));
+    const samples_per_pixel = opts.samples_per_pixel;
+
     // Viewport dimensions
     const focal_length = 1.0;
     const viewport_height = 2.0;
@@ -58,6 +70,8 @@ pub fn init(opts: Options) Camera {
     return .{
         .w = w,
         .log = log,
+        .rand = rand,
+
         .aspect_ratio = aspect_ratio,
         .image_width = image_width,
         .image_height = image_height,
@@ -65,6 +79,8 @@ pub fn init(opts: Options) Camera {
         .pixel00 = pixel00,
         .pixel_delta_u = pixel_delta_u,
         .pixel_delta_v = pixel_delta_v,
+        .pixel_samples_scale = pixel_samples_scale,
+        .samples_per_pixel = samples_per_pixel,
     };
 }
 
@@ -74,16 +90,33 @@ pub fn render(self: Camera, world: Hittable) !void {
     for (0..self.image_height) |j| {
         try self.log.print("\rScanlines remaining: {} ", .{self.image_height - j});
         for (0..self.image_width) |i| {
-            const pixel_center = self.pixel00 + vec.scale(self.pixel_delta_u, @as(f64, @floatFromInt(i))) + vec.scale(self.pixel_delta_v, @as(f64, @floatFromInt(j)));
-            const ray_dir = pixel_center - self.center;
-            const ray = Ray.init(self.center, ray_dir);
+            var pixel_color = Color{ 0.0, 0.0, 0.0 };
+            for (0..self.samples_per_pixel) |_| {
+                const ray = self.getRay(i, j);
+                pixel_color = pixel_color + rayColor(ray, world);
+            }
 
-            const pixel_color = rayColor(ray, world);
-            try vec.writeColor(self.w, pixel_color);
+            try vec.writeColor(self.w, vec.scale(pixel_color, self.pixel_samples_scale));
         }
     }
     try self.w.flush();
     try self.log.writeAll("\rDone.                         \n");
+}
+
+fn sampleSquare(self: Camera) Vec3 {
+    return .{
+        self.rand.float(f64) - 0.5,
+        self.rand.float(f64) - 0.5,
+        0.0,
+    };
+}
+
+fn getRay(self: Camera, i: usize, j: usize) Ray {
+    const offset = self.sampleSquare();
+    const pixel_sample = self.pixel00 + vec.scale(self.pixel_delta_u, offset[0] + @as(f64, @floatFromInt(i))) + vec.scale(self.pixel_delta_v, offset[1] + @as(f64, @floatFromInt(j)));
+
+    const ray_direction = pixel_sample - self.center;
+    return .{ .origin = self.center, .direction = ray_direction };
 }
 
 fn rayColor(ray: Ray, world: Hittable) Color {
