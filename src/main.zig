@@ -5,8 +5,7 @@ const Vec3 = vec.Vec3;
 const Point = vec.Point;
 const Color = vec.Color;
 
-const ray = @import("ray.zig");
-const Ray = ray.Ray;
+const Ray = @import("Ray.zig");
 
 const hittable = @import("hittable.zig");
 const Hittable = hittable.Hittable;
@@ -14,6 +13,8 @@ const Sphere = hittable.Sphere;
 const HitRecord = hittable.HitRecord;
 
 const HitList = @import("HitList.zig");
+
+const Camera = @import("Camera.zig");
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
@@ -24,10 +25,13 @@ pub fn main(init: std.process.Init) !void {
     const w = &file_writer.interface;
     const log = &log_writer.interface;
 
-    // Image size
-    const aspect_ratio = 16.0 / 9.0;
-    const image_width: usize = 400;
-    const image_height = @max(@as(comptime_int, @intFromFloat(@as(comptime_float, @floatFromInt(image_width)) / aspect_ratio)), 1);
+    const camera_opts = Camera.Options{
+        .w = w,
+        .log = log,
+        .aspect_ratio = 16.0 / 9.0,
+        .image_width = 400,
+    };
+    const camera = Camera.init(camera_opts);
 
     // World full of objects.
     var world = try HitList.init(init.gpa);
@@ -41,37 +45,7 @@ pub fn main(init: std.process.Init) !void {
         .radius = 100.0,
     } });
 
-    // Camera
-    const focal_length = 1.0;
-    const viewport_height = 2.0;
-    const viewport_width = viewport_height * (@as(f64, @floatFromInt(image_width)) / image_height);
-    const camera_center = Point{ 0.0, 0.0, 0.0 };
-
-    const viewport_u = Vec3{ viewport_width, 0.0, 0.0 };
-    const viewport_v = Vec3{ 0.0, -viewport_height, 0.0 };
-
-    const pixel_delta_u = viewport_u / vec.splat(Vec3, image_width);
-    const pixel_delta_v = viewport_v / vec.splat(Vec3, image_height);
-
-    // Calculate postion of top left.
-    const viewport_upper_left = camera_center - Vec3{ 0.0, 0.0, focal_length } - vec.scale(viewport_u, 0.5) - vec.scale(viewport_v, 0.5);
-    const pixel00_loc = viewport_upper_left + vec.scale(pixel_delta_u, 0.5) + vec.scale(pixel_delta_v, 0.5);
-
-    try w.print("P3\n{} {}\n255\n", .{ image_width, image_height });
-
-    for (0..image_height) |j| {
-        try log.print("\rScanlines remaining: {} ", .{image_height - j});
-        for (0..image_width) |i| {
-            const pixel_center = pixel00_loc + vec.scale(pixel_delta_u, @as(f64, @floatFromInt(i))) + vec.scale(pixel_delta_v, @as(f64, @floatFromInt(j)));
-            const ray_dir = pixel_center - camera_center;
-            const r = Ray.init(camera_center, ray_dir);
-
-            const pixel_color = rayColor(r, .{ .hit_list = world });
-            try vec.writeColor(w, pixel_color);
-        }
-    }
-    try w.flush();
-    try log.writeAll("\rDone.                         \n");
+    try camera.render(.{ .hit_list = world });
 }
 
 fn rayColor(r: Ray, world: Hittable) Color {
