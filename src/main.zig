@@ -22,7 +22,7 @@ pub fn main(init: std.process.Init) !void {
     var buf: [1024]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(io, &buf);
     var log_writer = std.Io.File.stderr().writer(io, &.{});
-    var prng = std.Random.DefaultPrng.init(37);
+    var prng = std.Random.DefaultPrng.init(42);
     const w = &file_writer.interface;
     const log = &log_writer.interface;
     const rand = prng.random();
@@ -33,6 +33,8 @@ pub fn main(init: std.process.Init) !void {
         .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
+        .samples_per_pixel = 100,
+        .max_bounce_depth = 50,
     };
     const camera = Camera.init(camera_opts);
 

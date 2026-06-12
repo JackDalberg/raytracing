@@ -24,6 +24,7 @@ pixel_delta_u: Vec3,
 pixel_delta_v: Vec3,
 samples_per_pixel: u16,
 pixel_samples_scale: f64,
+max_bounce_depth: u16,
 
 const Camera = @This();
 
@@ -37,6 +38,7 @@ pub const Options = struct {
     image_width: u16 = 100,
     center: Point = .{ 0.0, 0.0, 0.0 },
     samples_per_pixel: u16 = 10,
+    max_bounce_depth: u16 = 10,
 };
 
 pub fn init(opts: Options) Camera {
@@ -48,6 +50,7 @@ pub fn init(opts: Options) Camera {
     const image_width = opts.image_width;
     const image_height: u16 = @max(1, @as(u16, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio)));
     const center = opts.center;
+    const max_bounce_depth = opts.max_bounce_depth;
 
     const pixel_samples_scale: f64 = 1.0 / @as(f64, @floatFromInt(opts.samples_per_pixel));
     const samples_per_pixel = opts.samples_per_pixel;
@@ -81,6 +84,7 @@ pub fn init(opts: Options) Camera {
         .pixel_delta_v = pixel_delta_v,
         .pixel_samples_scale = pixel_samples_scale,
         .samples_per_pixel = samples_per_pixel,
+        .max_bounce_depth = max_bounce_depth,
     };
 }
 
@@ -93,7 +97,7 @@ pub fn render(self: Camera, world: Hittable) !void {
             var pixel_color = Color{ 0.0, 0.0, 0.0 };
             for (0..self.samples_per_pixel) |_| {
                 const ray = self.getRay(i, j);
-                pixel_color = pixel_color + rayColor(ray, world);
+                pixel_color = pixel_color + self.rayColor(ray, world, 0);
             }
 
             try vec.writeColor(self.w, vec.scale(pixel_color, self.pixel_samples_scale));
@@ -119,10 +123,16 @@ fn getRay(self: Camera, i: usize, j: usize) Ray {
     return .{ .origin = self.center, .direction = ray_direction };
 }
 
-fn rayColor(ray: Ray, world: Hittable) Color {
-    const hr = world.hit(ray, 0, std.math.inf(f64));
+fn rayColor(self: Camera, ray: Ray, world: Hittable, depth: u16) Color {
+    if (depth >= self.max_bounce_depth) {
+        return .{ 0.0, 0.0, 0.0 };
+    }
+
+    const hr = world.hit(ray, 0.001, std.math.inf(f64));
     if (hr.is_hit) {
-        return vec.scale(hr.normal + Color{ 1.0, 1.0, 1.0 }, 0.5);
+        //return vec.scale(hr.normal + Color{ 1.0, 1.0, 1.0 }, 0.5);
+        const direction = hr.normal + vec.randomUnitVec(self.rand);
+        return vec.scale(self.rayColor(Ray{ .origin = hr.point, .direction = direction }, world, depth + 1), 0.5);
     }
     // TODO: Make this work in a non bad way.
     //const unit_direction = vec.unit(r.direction);
