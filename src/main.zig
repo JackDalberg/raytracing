@@ -8,6 +8,13 @@ const Color = vec.Color;
 const ray = @import("ray.zig");
 const Ray = ray.Ray;
 
+const hittable = @import("hittable.zig");
+const Hittable = hittable.Hittable;
+const Sphere = hittable.Sphere;
+const HitRecord = hittable.HitRecord;
+
+const HitList = @import("HitList.zig");
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
@@ -21,6 +28,18 @@ pub fn main(init: std.process.Init) !void {
     const aspect_ratio = 16.0 / 9.0;
     const image_width: usize = 400;
     const image_height = @max(@as(comptime_int, @intFromFloat(@as(comptime_float, @floatFromInt(image_width)) / aspect_ratio)), 1);
+
+    // World full of objects.
+    var world = try HitList.init(init.gpa);
+    defer world.deinit();
+    try world.append(.{ .sphere = .{
+        .center = .{ 0.0, 0.0, -1.0 },
+        .radius = 0.5,
+    } });
+    try world.append(.{ .sphere = .{
+        .center = .{ 0.0, -100.5, -1.0 },
+        .radius = 100.0,
+    } });
 
     // Camera
     const focal_length = 1.0;
@@ -47,7 +66,7 @@ pub fn main(init: std.process.Init) !void {
             const ray_dir = pixel_center - camera_center;
             const r = Ray.init(camera_center, ray_dir);
 
-            const pixel_color = rayColor(r);
+            const pixel_color = rayColor(r, .{ .hit_list = world });
             try vec.writeColor(w, pixel_color);
         }
     }
@@ -55,23 +74,14 @@ pub fn main(init: std.process.Init) !void {
     try log.writeAll("\rDone.                         \n");
 }
 
-fn rayColor(r: Ray) Color {
-    // TODO: Make this work in a non bad way.
-    //
-    //const unit_direction = vec.unit(r.direction);
-    if (hitSphere(Point{0.0, 0.0, -1.0}, 0.5, r)) {
-        return Color{1.0, 0.0, 0.0};
+fn rayColor(r: Ray, world: Hittable) Color {
+    const hr = world.hit(r, 0, std.math.inf(f64));
+    if (hr.is_hit) {
+        return vec.scale(hr.normal + Color{ 1.0, 1.0, 1.0 }, 0.5);
     }
+    // TODO: Make this work in a non bad way.
+    //const unit_direction = vec.unit(r.direction);
     const unit_direction = r.direction / @as(Vec3, @splat(@sqrt(@reduce(.Add, r.direction * r.direction))));
     const a = 0.5 * (unit_direction[1] + 1.0);
-    return Color{1.0, 1.0, 1.0} * vec.vec3(1.0 - a) + Color{0.5, 0.7, 1.0} * vec.vec3(a);
-}
-
-fn hitSphere(center: Point, radius: f64, r: Ray) bool {
-    const oc = center - r.origin;
-    const a = vec.dot(r.direction, r.direction);
-    const b = -2.0 * vec.dot(r.direction, oc);
-    const c = vec.dot(oc, oc) - radius * radius;
-    const discriminant = b*b - 4*a*c;
-    return (discriminant >= 0);
+    return Color{ 1.0, 1.0, 1.0 } * vec.vec3(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.vec3(a);
 }

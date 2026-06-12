@@ -37,8 +37,7 @@ pub inline fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
 
 pub inline fn unit(v: anytype) @TypeOf(v) {
     ensureVector(@TypeOf(v));
-    const T = @TypeOf(v);
-    return v / splat(T, len(v));
+    return v / splat(@TypeOf(v), len(v));
 }
 
  pub inline fn scale(v: anytype, factor: anytype) @TypeOf(v) {
