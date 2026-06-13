@@ -8,5 +8,5 @@ origin: Point,
 direction: Vec3,
 
 pub fn atTime(ray: Ray, t: f64) Point {
-    return ray.origin + ray.direction * vec.vec3(t);
+    return ray.origin + ray.direction * vec.splat(t);
 }

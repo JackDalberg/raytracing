@@ -38,15 +38,18 @@ pub fn main(init: std.process.Init) !void {
         .image_width = 400,
         .samples_per_pixel = 100,
         .max_bounce_depth = 50,
+        .vertical_fov = 20.0,
+        .look_from = .{ -2.0, 2.0, 1.0 },
+        .look_at = .{ 0.0, 0.0, -1.0 },
+        .view_up = .{ 0.0, 1.0, 0.0 },
     };
     const camera = Camera.init(camera_opts);
 
     // Materials for the world.
     const mat_ground = Material{ .lambertian = .{ .albedo = .{ 0.8, 0.8, 0.0 } } };
     const mat_center = Material{ .lambertian = .{ .albedo = .{ 0.1, 0.2, 0.5 } } };
-    //const mat_left = Material{ .metal = .init(.{ 0.8, 0.8, 0.8 }, 0.3) };
     const mat_left = Material{ .dielectric = .{ .refraction_index = 1.5 } };
-    const mat_bubble = Material{ .dielectric = .{ .refraction_index = 1.00 / 1.5 } };
+    const mat_bubble = Material{ .dielectric = .{ .refraction_index = 1.0 / 1.5 } };
     const mat_right = Material{ .metal = .init(.{ 0.8, 0.6, 0.2 }, 1.0) };
 
     // World full of objects.
@@ -98,7 +101,7 @@ fn rayColor(r: Ray, world: Hittable) Color {
     }
     // TODO: Make this work in a non bad way.
     //const unit_direction = vec.unit(r.direction);
-    const unit_direction = r.direction / @as(Vec3, @splat(@sqrt(@reduce(.Add, r.direction * r.direction))));
+    const unit_direction = r.direction / vec.unit(r.direction);
     const a = 0.5 * (unit_direction[1] + 1.0);
-    return Color{ 1.0, 1.0, 1.0 } * vec.vec3(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.vec3(a);
+    return Color{ 1.0, 1.0, 1.0 } * vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
 }

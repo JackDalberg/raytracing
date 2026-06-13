@@ -39,9 +39,12 @@ pub const Options = struct {
 
     aspect_ratio: f64 = 1.0,
     image_width: u16 = 100,
-    center: Point = .{ 0.0, 0.0, 0.0 },
     samples_per_pixel: u16 = 10,
     max_bounce_depth: u16 = 10,
+    vertical_fov: f64 = 90.0,
+    look_from: Point = .{ 0.0, 0.0, 0.0 },
+    look_at: Point = .{ 0.0, 0.0, -1.0 },
+    view_up: Vec3 = .{ 0.0, 1.0, 0.0 },
 };
 
 pub fn init(opts: Options) Camera {
@@ -52,25 +55,33 @@ pub fn init(opts: Options) Camera {
     const aspect_ratio = opts.aspect_ratio;
     const image_width = opts.image_width;
     const image_height: u16 = @max(1, @as(u16, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio)));
-    const center = opts.center;
     const max_bounce_depth = opts.max_bounce_depth;
 
     const pixel_samples_scale: f64 = 1.0 / @as(f64, @floatFromInt(opts.samples_per_pixel));
     const samples_per_pixel = opts.samples_per_pixel;
 
+    const center = opts.look_from;
+
     // Viewport dimensions
-    const focal_length = 1.0;
-    const viewport_height = 2.0;
+    const focal_length = vec.len(opts.look_from - opts.look_at);
+    const theta = degreesToRadians(opts.vertical_fov);
+    const h = @tan(theta / 2.0);
+    const viewport_height = 2.0 * h * focal_length;
     const viewport_width = viewport_height * (@as(f64, @floatFromInt(image_width)) / image_height);
 
-    const viewport_u = Vec3{ viewport_width, 0.0, 0.0 };
-    const viewport_v = Vec3{ 0.0, -viewport_height, 0.0 };
+    // Find basis vectors u, v, w for the camera coordinate frame.
+    const cam_w = vec.unit(opts.look_from - opts.look_at);
+    const cam_u = vec.unit(vec.cross(opts.view_up, cam_w));
+    const cam_v = vec.cross(cam_w, cam_u);
 
-    const pixel_delta_u = viewport_u / vec.splat(Vec3, image_width);
-    const pixel_delta_v = viewport_v / vec.splat(Vec3, image_height);
+    const viewport_u = vec.scale(cam_u, viewport_width);
+    const viewport_v = vec.scale(cam_v, -viewport_height);
+
+    const pixel_delta_u = viewport_u / vec.splat(image_width);
+    const pixel_delta_v = viewport_v / vec.splat(image_height);
 
     // Calculate postion of top left.
-    const viewport_upper_left = center - Vec3{ 0.0, 0.0, focal_length } - vec.scale(viewport_u + viewport_v, 0.5);
+    const viewport_upper_left = center - vec.scale(cam_w, focal_length) - vec.scale(viewport_u + viewport_v, 0.5);
     const pixel00 = viewport_upper_left + vec.scale(pixel_delta_u + pixel_delta_v, 0.5);
 
     return .{
@@ -141,7 +152,11 @@ fn rayColor(self: Camera, ray: Ray, world: Hittable, depth: u16) Color {
     }
     // TODO: Make this work in a non bad way.
     //const unit_direction = vec.unit(r.direction);
-    const unit_direction = ray.direction / @as(Vec3, @splat(@sqrt(@reduce(.Add, ray.direction * ray.direction))));
+    const unit_direction = ray.direction / vec.unit(ray.direction);
     const a = 0.5 * (unit_direction[1] + 1.0);
-    return Color{ 1.0, 1.0, 1.0 } * vec.vec3(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.vec3(a);
+    return Color{ 1.0, 1.0, 1.0 } * vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
+}
+
+fn degreesToRadians(degrees: f64) f64 {
+    return degrees * std.math.pi / 180.0;
 }
