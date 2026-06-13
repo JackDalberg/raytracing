@@ -38,10 +38,14 @@ pub fn main(init: std.process.Init) !void {
         .image_width = 400,
         .samples_per_pixel = 100,
         .max_bounce_depth = 50,
+
         .vertical_fov = 20.0,
         .look_from = .{ -2.0, 2.0, 1.0 },
         .look_at = .{ 0.0, 0.0, -1.0 },
         .view_up = .{ 0.0, 1.0, 0.0 },
+
+        .defocus_angle = 10.0,
+        .focus_dist = 3.4,
     };
     const camera = Camera.init(camera_opts);
 

@@ -47,9 +47,9 @@ pub fn splat(n: f64) Vec3 {
 // Technically a little biased... oh well
 pub fn randomVec(rand: std.Random) Vec3 {
     return .{
-        1.0 - 2 * rand.float(f64),
-        1.0 - 2 * rand.float(f64),
-        1.0 - 2 * rand.float(f64),
+        1.0 - 2.0 * rand.float(f64),
+        1.0 - 2.0 * rand.float(f64),
+        1.0 - 2.0 * rand.float(f64),
     };
 }
 
@@ -69,6 +69,15 @@ pub fn randomOnHemisphere(rand: std.Random, normal: Vec3) Vec3 {
         return on_unit_sphere;
     }
     return -on_unit_sphere;
+}
+
+pub fn randomInUnitDisk(rand: std.Random) Point {
+    while (true) {
+        const p = Vec3{ 2.0 * rand.float(f64) - 1.0, 2.0 * rand.float(f64) - 1.0, 0.0 };
+        if (len(p) < 1.0) {
+            return p;
+        }
+    }
 }
 
 pub fn nearZero(vec: Vec3) bool {
