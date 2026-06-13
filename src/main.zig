@@ -22,7 +22,7 @@ const Material = mat.Material;
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
-    var buf: [1024]u8 = undefined;
+    var buf: [1 * 1024 * 1024]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(io, &buf);
     var log_writer = std.Io.File.stderr().writer(io, &.{});
     var prng = std.Random.DefaultPrng.init(42);
@@ -44,7 +44,9 @@ pub fn main(init: std.process.Init) !void {
     // Materials for the world.
     const mat_ground = Material{ .lambertian = .{ .albedo = .{ 0.8, 0.8, 0.0 } } };
     const mat_center = Material{ .lambertian = .{ .albedo = .{ 0.1, 0.2, 0.5 } } };
-    const mat_left = Material{ .metal = .init(.{ 0.8, 0.8, 0.8 }, 0.3) };
+    //const mat_left = Material{ .metal = .init(.{ 0.8, 0.8, 0.8 }, 0.3) };
+    const mat_left = Material{ .dielectric = .{ .refraction_index = 1.5 } };
+    const mat_bubble = Material{ .dielectric = .{ .refraction_index = 1.00 / 1.5 } };
     const mat_right = Material{ .metal = .init(.{ 0.8, 0.6, 0.2 }, 1.0) };
 
     // World full of objects.
@@ -69,6 +71,13 @@ pub fn main(init: std.process.Init) !void {
             .center = .{ -1.0, 0.0, -1.0 },
             .radius = 0.5,
             .material = mat_left,
+        },
+    });
+    try world.append(.{
+        .sphere = .{ // Bubble
+            .center = .{ -1.0, 0.0, -1.0 },
+            .radius = 0.4,
+            .material = mat_bubble,
         },
     });
     try world.append(.{

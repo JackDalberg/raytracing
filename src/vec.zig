@@ -98,6 +98,14 @@ pub fn reflect(vec: Vec3, normal: Vec3) Vec3 {
     return vec - scale(normal, 2 * dot(vec, normal));
 }
 
+pub fn refract(vec: Vec3, normal: Vec3, eta_ratio: f64) Vec3 {
+    const cos_theta = @min(dot(-vec, normal), 1.0);
+    const ray_out_perp = scale(vec + scale(normal, cos_theta), eta_ratio);
+    const ray_out_parallel = scale(normal, -@sqrt(@abs(1.0 - dot(ray_out_perp, ray_out_perp))));
+    return ray_out_perp + ray_out_parallel;
+
+}
+
 // Helper functions over the builtin Vector type to allow for generic functions on Vector types.
 // See: https://github.com/ryoppippi/Ray-Tracing-in-One-Weekend.zig/blob/main/src/vec.zig.
 inline fn ensureVector(comptime T: type) void {

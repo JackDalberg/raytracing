@@ -24,10 +24,10 @@ pub fn append(self: *HitList, item: hittable.Hittable) !void {
     try self.list.append(self.allocator, item);
 }
 
-pub fn hit(self: HitList, r: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
+pub fn hit(self: HitList, ray: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
     var hr: hittable.HitRecord = .{ .is_hit = false, .time = t_max };
     for (self.list.items) |candidate| {
-        const possible_hr = candidate.hit(r, t_min, t_max);
+        const possible_hr = candidate.hit(ray, t_min, t_max);
         if (possible_hr.is_hit and possible_hr.time < hr.time) {
             hr = possible_hr;
         }

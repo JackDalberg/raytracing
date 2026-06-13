@@ -17,11 +17,13 @@ pub const Scatter = struct {
 pub const Material = union(enum) {
     lambertian: Lambertian,
     metal: Metal,
+    dielectric: Dielectric,
 
     pub fn scatter(self: Material, ray_in: Ray, rec: HitRecord, rand: std.Random) Scatter {
         return switch (self) {
             .lambertian => |l| l.scatter(ray_in, rec, rand),
             .metal => |m| m.scatter(ray_in, rec, rand),
+            .dielectric => |d| d.scatter(ray_in, rec, rand),
         };
     }
 };
@@ -68,5 +70,41 @@ const Metal = struct {
             .scattered = scattered,
             .is_scattered = (vec.dot(scattered.direction, rec.normal) > 0),
         };
+    }
+};
+
+const Dielectric = struct {
+    refraction_index: f64,
+
+    pub fn scatter(self: Dielectric, ray_in: Ray, rec: HitRecord, rand: std.Random) Scatter {
+        _ = rand;
+        var refraction_index = self.refraction_index;
+        if (rec.front_face) {
+            refraction_index = 1.0 / refraction_index;
+        }
+
+        const unit_direction = vec.unit(ray_in.direction);
+
+        const cos_theta = @min(vec.dot(-unit_direction, rec.normal), 1.0);
+        const sin_theta = @sqrt(1.0 - cos_theta * cos_theta);
+
+        const cannot_refract = (refraction_index * sin_theta > 1.0);
+        var refracted: vec.Vec3 = undefined;
+        if (cannot_refract) {
+            refracted = vec.reflect(unit_direction, rec.normal);
+        } else {
+            refracted = vec.refract(unit_direction, rec.normal, refraction_index);
+        }
+        return .{
+            .attenuation = .{ 1.0, 1.0, 1.0 },
+            .scattered = .{ .origin = rec.point, .direction = refracted },
+            .is_scattered = true,
+        };
+    }
+
+    fn reflectance(cosine: f64, refraction_index: f64) f64 {
+        var r0 = (1 - refraction_index) / (1 + refraction_index);
+        r0 = r0 * r0;
+        return r0 + (1 - r0) * std.math.pow(f64, (1 - cosine), 5);
     }
 };
