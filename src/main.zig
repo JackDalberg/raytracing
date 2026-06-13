@@ -22,7 +22,7 @@ const Material = mat.Material;
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
-    var buf: [1 * 1024 * 1024]u8 = undefined;
+    var buf: [4 * 1024]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(io, &buf);
     var log_writer = std.Io.File.stderr().writer(io, &.{});
     var prng = std.Random.DefaultPrng.init(42);
@@ -37,75 +37,91 @@ pub fn main(init: std.process.Init) !void {
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
         .samples_per_pixel = 100,
-        .max_bounce_depth = 50,
+        .max_bounce_depth = 2,
 
         .vertical_fov = 20.0,
-        .look_from = .{ -2.0, 2.0, 1.0 },
-        .look_at = .{ 0.0, 0.0, -1.0 },
+        .look_from = .{ 13.0, 2.0, 3.0 },
+        .look_at = .{ 0.0, 0.0, 0.0 },
         .view_up = .{ 0.0, 1.0, 0.0 },
 
-        .defocus_angle = 10.0,
-        .focus_dist = 3.4,
+        .defocus_angle = 0.6,
+        .focus_dist = 10.0,
     };
     const camera = Camera.init(camera_opts);
 
     // Materials for the world.
-    const mat_ground = Material{ .lambertian = .{ .albedo = .{ 0.8, 0.8, 0.0 } } };
-    const mat_center = Material{ .lambertian = .{ .albedo = .{ 0.1, 0.2, 0.5 } } };
-    const mat_left = Material{ .dielectric = .{ .refraction_index = 1.5 } };
-    const mat_bubble = Material{ .dielectric = .{ .refraction_index = 1.0 / 1.5 } };
-    const mat_right = Material{ .metal = .init(.{ 0.8, 0.6, 0.2 }, 1.0) };
+    const mat_ground = Material{ .lambertian = .{ .albedo = .{ 0.5, 0.5, 0.5 } } };
 
     // World full of objects.
     var world = try HitList.init(init.gpa);
     defer world.deinit();
     try world.append(.{
-        .sphere = .{ // Center
-            .center = .{ 0.0, 0.0, -1.2 },
-            .radius = 0.5,
-            .material = mat_center,
-        },
-    });
-    try world.append(.{
         .sphere = .{ // Ground
-            .center = .{ 0.0, -100.5, -1.0 },
-            .radius = 100.0,
+            .center = .{ 0.0, -1000.0, 0.0 },
+            .radius = 1000.0,
             .material = mat_ground,
         },
     });
+
+    for (0..22) |a| {
+        const a_float: f64 = @floatFromInt(@as(i8, @intCast(a)) - 11);
+        for (0..22) |b| {
+            const b_float: f64 = @floatFromInt(@as(i8, @intCast(b)) - 11);
+            // rand_double below
+            const choose_mat = rand.float(f64);
+            const center = Point{ a_float + 0.9 * rand.float(f64), 0.2, b_float + 0.9 * rand.float(f64) };
+
+            if (vec.len(center - Point{ 4.0, 0.2, 0.0 }) > 0.9) {
+                var sphere_material: Material = undefined;
+                if (choose_mat < 0.8) {
+                    // diffuse
+                    const albedo = vec.randomVec(rand) * vec.randomVec(rand);
+                    sphere_material = .{ .lambertian = .{ .albedo = albedo } };
+                } else if (choose_mat < 0.95) {
+                    // metal
+                    const albedo = Vec3{ 0.5, 0.5, 0.5 } + vec.scale(Vec3{ 1.0, 1.0, 1.0 } + vec.randomVec(rand), 0.25);
+                    const fuzz = rand.float(f64) * 0.5;
+                    sphere_material = .{ .metal = .{ .albedo = albedo, .fuzz = fuzz } };
+                } else {
+                    // glass
+                    sphere_material = .{ .dielectric = .{ .refraction_index = 1.5 } };
+                }
+                try world.append(.{
+                    .sphere = .{
+                        .center = center,
+                        .radius = 0.2,
+                        .material = sphere_material,
+                    },
+                });
+            }
+        }
+    }
+
+    const material1 = Material{ .dielectric = .{ .refraction_index = 1.5}};
     try world.append(.{
-        .sphere = .{ // Left
-            .center = .{ -1.0, 0.0, -1.0 },
-            .radius = 0.5,
-            .material = mat_left,
+        .sphere = .{
+            .center = .{ 0.0, 1.0, 0.0 },
+            .radius = 1.0,
+            .material = material1,
         },
     });
+    const material2 = Material{ .lambertian = .{ .albedo = .{ 0.4, 0.2, 0.1 }} };
     try world.append(.{
-        .sphere = .{ // Bubble
-            .center = .{ -1.0, 0.0, -1.0 },
-            .radius = 0.4,
-            .material = mat_bubble,
+        .sphere = .{
+            .center = .{ -4.0, 1.0, 0.0 },
+            .radius = 1.0,
+            .material = material2,
         },
     });
+    const material3 = Material{ .metal = .{ .albedo = .{ 0.7, 0.6, 0.5}, .fuzz = 0.0 }};
     try world.append(.{
-        .sphere = .{ // Right
-            .center = .{ 1.0, 0.0, -1.0 },
-            .radius = 0.5,
-            .material = mat_right,
+        .sphere = .{
+            .center = .{ 4.0, 1.0, 0.0 },
+            .radius = 1.0,
+            .material = material3,
         },
     });
 
     try camera.render(.{ .hit_list = world });
 }
 
-fn rayColor(r: Ray, world: Hittable) Color {
-    const hr = world.hit(r, 0, std.math.inf(f64));
-    if (hr.is_hit) {
-        return vec.scale(hr.normal + Color{ 1.0, 1.0, 1.0 }, 0.5);
-    }
-    // TODO: Make this work in a non bad way.
-    //const unit_direction = vec.unit(r.direction);
-    const unit_direction = r.direction / vec.unit(r.direction);
-    const a = 0.5 * (unit_direction[1] + 1.0);
-    return Color{ 1.0, 1.0, 1.0 } * vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
-}

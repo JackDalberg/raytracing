@@ -19,7 +19,7 @@ pub fn len(v: Vec3) f64 {
     return @sqrt(dot(v, v));
 }
 
-pub fn dot(v1: Vec3, v2: Vec3) f64 {
+pub inline fn dot(v1: Vec3, v2: Vec3) f64 {
     return @reduce(.Add, v1 * v2);
 }
 
@@ -54,13 +54,11 @@ pub fn randomVec(rand: std.Random) Vec3 {
 }
 
 pub fn randomUnitVec(rand: std.Random) Vec3 {
-    while (true) {
-        const r = randomVec(rand);
-        const l = len(r);
-        if (1e-150 < l and l <= 1.0) {
-            return scale(r, len(r));
-        }
+    var r = randomVec(rand);
+    if (1e-150 >= len(r)) {
+        r += .{ rand.float(f64), rand.float(f64), rand.float(f64) };
     }
+    return scale(r, rand.float(f64) / len(r));
 }
 
 pub fn randomOnHemisphere(rand: std.Random, normal: Vec3) Vec3 {
@@ -72,19 +70,13 @@ pub fn randomOnHemisphere(rand: std.Random, normal: Vec3) Vec3 {
 }
 
 pub fn randomInUnitDisk(rand: std.Random) Point {
-    while (true) {
-        const p = Vec3{ 2.0 * rand.float(f64) - 1.0, 2.0 * rand.float(f64) - 1.0, 0.0 };
-        if (len(p) < 1.0) {
-            return p;
-        }
-    }
+    const p = Vec3{ 2.0 * rand.float(f64) - 1.0, 2.0 * rand.float(f64) - 1.0, 0.0 };
+    return scale(p, rand.float(f64) / len(p));
 }
 
 pub fn nearZero(vec: Vec3) bool {
     const epsilon = 1e-8;
-    return (-epsilon < vec[0] and vec[0] < epsilon)
-    and (-epsilon < vec[1] and vec[1] < epsilon)
-    and (-epsilon < vec[2] and vec[2] < epsilon);
+    return (-epsilon < vec[0] and vec[0] < epsilon) and (-epsilon < vec[1] and vec[1] < epsilon) and (-epsilon < vec[2] and vec[2] < epsilon);
 }
 
 pub fn reflect(vec: Vec3, normal: Vec3) Vec3 {
@@ -96,5 +88,4 @@ pub fn refract(vec: Vec3, normal: Vec3, eta_ratio: f64) Vec3 {
     const ray_out_perp = scale(vec + scale(normal, cos_theta), eta_ratio);
     const ray_out_parallel = scale(normal, -@sqrt(@abs(1.0 - dot(ray_out_perp, ray_out_perp))));
     return ray_out_perp + ray_out_parallel;
-
 }

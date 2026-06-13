@@ -123,11 +123,12 @@ pub fn render(self: Camera, world: Hittable) !void {
             var pixel_color = Color{ 0.0, 0.0, 0.0 };
             for (0..self.samples_per_pixel) |_| {
                 const ray = self.getRay(i, j);
-                pixel_color = pixel_color + self.rayColor(ray, world, 0);
+                pixel_color += self.rayColor(ray, world, 0);
             }
 
             try vec.writeColor(self.w, vec.scale(pixel_color, self.pixel_samples_scale));
         }
+        try self.w.flush();
     }
     try self.w.flush();
     try self.log.writeAll("\rDone.                         \n");
@@ -154,25 +155,45 @@ fn getRay(self: Camera, i: usize, j: usize) Ray {
     return .{ .origin = origin, .direction = direction };
 }
 
+// Iterative variant
 fn rayColor(self: Camera, ray: Ray, world: Hittable, depth: u16) Color {
-    if (depth >= self.max_bounce_depth) {
-        return .{ 0.0, 0.0, 0.0 };
-    }
-
-    const rec = world.hit(ray, 0.001, std.math.inf(f64));
-    if (rec.is_hit) {
-        const scatter = rec.material.scatter(ray, rec, self.rand);
-        if (scatter.is_scattered) {
-            return scatter.attenuation * self.rayColor(scatter.scattered, world, depth + 1);
+    var return_color = Color{ 1.0, 1.0, 1.0 };
+    while (depth < self.max_bounce_depth) {
+        const rec = world.hit(ray, 0.001, std.math.inf(f64));
+        if (rec.is_hit) {
+            const scatter = rec.material.scatter(ray, rec, self.rand);
+            if (scatter.is_scattered) {
+                return_color *= scatter.attenuation;
+                continue;
+            }
+            return .{ 0.0, 0.0, 0.0 };
         }
-        return Color{ 0.0, 0.0, 0.0 };
+        const unit_direction = vec.unit(ray.direction);
+        const a = 0.5 * (unit_direction[1] + 1.0);
+        return_color *= vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
+        return return_color;
     }
-    // TODO: Make this work in a non bad way.
-    //const unit_direction = vec.unit(r.direction);
-    const unit_direction = ray.direction / vec.unit(ray.direction);
-    const a = 0.5 * (unit_direction[1] + 1.0);
-    return Color{ 1.0, 1.0, 1.0 } * vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
+    return .{ 0.0, 0.0, 0.0 };
 }
+
+// Recurive
+//fn _rayColor(self: Camera, ray: Ray, world: Hittable, depth: u16) Color {
+//    if (depth >= self.max_bounce_depth) {
+//        return .{ 0.0, 0.0, 0.0 };
+//    }
+//
+//    const rec = world.hit(ray, 0.001, std.math.inf(f64));
+//    if (rec.is_hit) {
+//        const scatter = rec.material.scatter(ray, rec, self.rand);
+//        if (scatter.is_scattered) {
+//            return scatter.attenuation * self.rayColor(scatter.scattered, world, depth + 1);
+//        }
+//        return Color{ 0.0, 0.0, 0.0 };
+//    }
+//    const unit_direction = ray.direction / vec.unit(ray.direction);
+//    const a = 0.5 * (unit_direction[1] + 1.0);
+//    return Color{ 1.0, 1.0, 1.0 } * vec.splat(1.0 - a) + Color{ 0.5, 0.7, 1.0 } * vec.splat(a);
+//}
 
 fn defocusDiskSample(self: Camera) Point {
     const p = vec.randomInUnitDisk(self.rand);

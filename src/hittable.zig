@@ -1,4 +1,6 @@
 const vec = @import("vec.zig");
+const Vec3 = vec.Vec3;
+const Point = vec.Point;
 
 const Ray = @import("Ray.zig");
 
@@ -10,18 +12,22 @@ const Material = mat_zig.Material;
 pub const HitRecord = struct {
     is_hit: bool = false,
     front_face: bool = false,
-    point: vec.Point = undefined,
-    normal: vec.Vec3 = undefined,
+    point: Point = undefined,
+    normal: Vec3 = undefined,
     time: f64 = 0.0,
     material: Material = undefined,
 
-    // Assumes outward_normal is of unit length.
-    pub fn setFaceNormal(self: *HitRecord, ray: Ray, outward_normal: vec.Vec3) void {
-        self.front_face = (vec.dot(ray.direction, outward_normal) < 0);
-        self.normal = outward_normal;
-        if (!self.front_face) {
-            self.normal = -outward_normal;
-        }
+    pub fn init(ray: Ray, time: f64, outward_normal: Vec3, material: Material) HitRecord {
+        const front_face = (vec.dot(ray.direction, outward_normal) < 0);
+        const point = ray.atTime(time);
+        return .{
+            .is_hit = true,
+            .front_face = front_face,
+            .point = point,
+            .normal =  if (front_face) outward_normal else -outward_normal,
+            .time = time,
+            .material = material,
+        };
     }
 };
 
@@ -43,7 +49,7 @@ pub const Hittable = union(enum) {
 };
 
 pub const Sphere = struct {
-    center: vec.Point,
+    center: Point,
     radius: f64,
     material: Material,
 
@@ -60,20 +66,13 @@ pub const Sphere = struct {
 
         const sqrtd = @sqrt(discriminant);
         var root = (h - sqrtd) / a;
-        if (root <= t_min or root >= t_max) {
+        if (root < t_min or root > t_max) {
             root = (h + sqrtd) / a;
-            if (root <= t_min or root >= t_max) {
+            if (root < t_min or root > t_max) {
                 return .{ .is_hit = false };
             }
         }
-        var hr: HitRecord = .{
-            .is_hit = true,
-            .point = ray.atTime(root),
-            .time = root,
-            .material = self.material,
-        };
         const outward_normal = vec.scale(ray.atTime(root) - self.center, 1 / self.radius);
-        hr.setFaceNormal(ray, outward_normal);
-        return hr;
+        return .init(ray, root, outward_normal, self.material);
     }
 };

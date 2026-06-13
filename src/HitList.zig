@@ -12,7 +12,7 @@ list: std.ArrayList(hittable.Hittable),
 pub fn init(allocator: std.mem.Allocator) !HitList {
     return .{
         .allocator = allocator,
-        .list = try std.ArrayList(hittable.Hittable).initCapacity(allocator, 10),
+        .list = try std.ArrayList(hittable.Hittable).initCapacity(allocator, 0),
     };
 }
 
@@ -27,8 +27,8 @@ pub fn append(self: *HitList, item: hittable.Hittable) !void {
 pub fn hit(self: HitList, ray: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
     var hr: hittable.HitRecord = .{ .is_hit = false, .time = t_max };
     for (self.list.items) |candidate| {
-        const possible_hr = candidate.hit(ray, t_min, t_max);
-        if (possible_hr.is_hit and possible_hr.time < hr.time) {
+        const possible_hr = candidate.hit(ray, t_min, hr.time);
+        if (possible_hr.is_hit) {
             hr = possible_hr;
         }
     }
