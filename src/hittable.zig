@@ -4,12 +4,16 @@ const Ray = @import("Ray.zig");
 
 const HitList = @import("HitList.zig");
 
+const mat_zig = @import("material.zig");
+const Material = mat_zig.Material;
+
 pub const HitRecord = struct {
     is_hit: bool = false,
     front_face: bool = false,
     point: vec.Point = undefined,
     normal: vec.Vec3 = undefined,
     time: f64 = 0.0,
+    material: Material = undefined,
 
     // Assumes outward_normal is of unit length.
     pub fn setFaceNormal(self: *HitRecord, ray: Ray, outward_normal: vec.Vec3) void {
@@ -41,6 +45,7 @@ pub const Hittable = union(enum) {
 pub const Sphere = struct {
     center: vec.Point,
     radius: f64,
+    material: Material,
 
     pub fn hit(self: Sphere, ray: Ray, t_min: f64, t_max: f64) HitRecord {
         const oc = self.center - ray.origin;
@@ -65,6 +70,7 @@ pub const Sphere = struct {
             .is_hit = true,
             .point = ray.atTime(root),
             .time = root,
+            .material = self.material,
         };
         const outward_normal = vec.scale(ray.atTime(root) - self.center, 1 / self.radius);
         hr.setFaceNormal(ray, outward_normal);

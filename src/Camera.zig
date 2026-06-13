@@ -11,6 +11,9 @@ const Vec3 = vec.Vec3;
 const Point = vec.Point;
 const Color = vec.Color;
 
+const mat = @import("material.zig");
+const Material = mat.Material;
+
 w: *std.Io.Writer,
 log: *std.Io.Writer,
 rand: std.Random,
@@ -128,11 +131,13 @@ fn rayColor(self: Camera, ray: Ray, world: Hittable, depth: u16) Color {
         return .{ 0.0, 0.0, 0.0 };
     }
 
-    const hr = world.hit(ray, 0.001, std.math.inf(f64));
-    if (hr.is_hit) {
-        //return vec.scale(hr.normal + Color{ 1.0, 1.0, 1.0 }, 0.5);
-        const direction = hr.normal + vec.randomUnitVec(self.rand);
-        return vec.scale(self.rayColor(Ray{ .origin = hr.point, .direction = direction }, world, depth + 1), 0.5);
+    const rec = world.hit(ray, 0.001, std.math.inf(f64));
+    if (rec.is_hit) {
+        const scatter = rec.material.scatter(ray, rec, self.rand);
+        if (scatter.is_scattered) {
+            return scatter.attenuation * self.rayColor(scatter.scattered, world, depth + 1);
+        }
+        return Color{ 0.0, 0.0, 0.0 };
     }
     // TODO: Make this work in a non bad way.
     //const unit_direction = vec.unit(r.direction);

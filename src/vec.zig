@@ -87,6 +87,17 @@ pub fn randomOnHemisphere(rand: std.Random, normal: Vec3) Vec3 {
     return -on_unit_sphere;
 }
 
+pub fn nearZero(vec: Vec3) bool {
+    const epsilon = 1e-8;
+    return (-epsilon < vec[0] and vec[0] < epsilon)
+    and (-epsilon < vec[1] and vec[1] < epsilon)
+    and (-epsilon < vec[2] and vec[2] < epsilon);
+}
+
+pub fn reflect(vec: Vec3, normal: Vec3) Vec3 {
+    return vec - scale(normal, 2 * dot(vec, normal));
+}
+
 // Helper functions over the builtin Vector type to allow for generic functions on Vector types.
 // See: https://github.com/ryoppippi/Ray-Tracing-in-One-Weekend.zig/blob/main/src/vec.zig.
 inline fn ensureVector(comptime T: type) void {

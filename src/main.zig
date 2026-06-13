@@ -16,6 +16,9 @@ const HitList = @import("HitList.zig");
 
 const Camera = @import("Camera.zig");
 
+const mat = @import("material.zig");
+const Material = mat.Material;
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
@@ -38,17 +41,43 @@ pub fn main(init: std.process.Init) !void {
     };
     const camera = Camera.init(camera_opts);
 
+    // Materials for the world.
+    const mat_ground = Material{ .lambertian = .{ .albedo = .{ 0.8, 0.8, 0.0 } } };
+    const mat_center = Material{ .lambertian = .{ .albedo = .{ 0.1, 0.2, 0.5 } } };
+    const mat_left = Material{ .metal = .init(.{ 0.8, 0.8, 0.8 }, 0.3) };
+    const mat_right = Material{ .metal = .init(.{ 0.8, 0.6, 0.2 }, 1.0) };
+
     // World full of objects.
     var world = try HitList.init(init.gpa);
     defer world.deinit();
-    try world.append(.{ .sphere = .{
-        .center = .{ 0.0, 0.0, -1.0 },
-        .radius = 0.5,
-    } });
-    try world.append(.{ .sphere = .{
-        .center = .{ 0.0, -100.5, -1.0 },
-        .radius = 100.0,
-    } });
+    try world.append(.{
+        .sphere = .{ // Center
+            .center = .{ 0.0, 0.0, -1.2 },
+            .radius = 0.5,
+            .material = mat_center,
+        },
+    });
+    try world.append(.{
+        .sphere = .{ // Ground
+            .center = .{ 0.0, -100.5, -1.0 },
+            .radius = 100.0,
+            .material = mat_ground,
+        },
+    });
+    try world.append(.{
+        .sphere = .{ // Left
+            .center = .{ -1.0, 0.0, -1.0 },
+            .radius = 0.5,
+            .material = mat_left,
+        },
+    });
+    try world.append(.{
+        .sphere = .{ // Right
+            .center = .{ 1.0, 0.0, -1.0 },
+            .radius = 0.5,
+            .material = mat_right,
+        },
+    });
 
     try camera.render(.{ .hit_list = world });
 }
