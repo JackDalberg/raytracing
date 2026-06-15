@@ -49,12 +49,13 @@ pub const Hittable = union(enum) {
 };
 
 pub const Sphere = struct {
-    center: Point,
+    center: Ray,
     radius: f64,
     material: Material,
 
     pub fn hit(self: Sphere, ray: Ray, t_min: f64, t_max: f64) HitRecord {
-        const oc = self.center - ray.origin;
+        const center = self.center.atTime(ray.time); 
+        const oc = center - ray.origin;
         const a = vec.dot(ray.direction, ray.direction);
         const h = vec.dot(ray.direction, oc);
         const c = vec.dot(oc, oc) - self.radius * self.radius;
@@ -72,7 +73,7 @@ pub const Sphere = struct {
                 return .{ .is_hit = false };
             }
         }
-        const outward_normal = vec.scale(ray.atTime(root) - self.center, 1 / self.radius);
+        const outward_normal = vec.scale(ray.atTime(root) - center, 1 / self.radius);
         return .init(ray, root, outward_normal, self.material);
     }
 };

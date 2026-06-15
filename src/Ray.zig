@@ -5,7 +5,8 @@ const Vec3 = vec.Vec3;
 const Ray = @This();
 
 origin: Point,
-direction: Vec3,
+direction: Vec3 = .{ 0.0, 0.0, 0.0 },
+time: f64 = 0.0,
 
 pub fn atTime(ray: Ray, t: f64) Point {
     return ray.origin + ray.direction * vec.splat(t);

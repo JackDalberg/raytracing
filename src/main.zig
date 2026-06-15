@@ -36,8 +36,8 @@ pub fn main(init: std.process.Init) !void {
         .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
-        .samples_per_pixel = 400,
-        .max_bounce_depth = 50,
+        .samples_per_pixel = 50,
+        .max_bounce_depth = 30,
 
         .vertical_fov = 20.0,
         .look_from = .{ 13.0, 2.0, 3.0 },
@@ -57,7 +57,7 @@ pub fn main(init: std.process.Init) !void {
     defer world.deinit();
     try world.append(.{
         .sphere = .{ // Ground
-            .center = .{ 0.0, -1000.0, 0.0 },
+            .center = .{ .origin = .{ 0.0, -1000.0, 0.0 } },
             .radius = 1000.0,
             .material = mat_ground,
         },
@@ -88,7 +88,7 @@ pub fn main(init: std.process.Init) !void {
                 }
                 try world.append(.{
                     .sphere = .{
-                        .center = center,
+                        .center = .{ .origin = center, .direction = vec.splat(rand.float(f64) * 0.2) },
                         .radius = 0.2,
                         .material = sphere_material,
                     },
@@ -97,26 +97,26 @@ pub fn main(init: std.process.Init) !void {
         }
     }
 
-    const material1 = Material{ .dielectric = .{ .refraction_index = 1.5}};
+    const material1 = Material{ .dielectric = .{ .refraction_index = 1.5 } };
     try world.append(.{
         .sphere = .{
-            .center = .{ 0.0, 1.0, 0.0 },
+            .center = .{ .origin = .{ 0.0, 1.0, 0.0 } },
             .radius = 1.0,
             .material = material1,
         },
     });
-    const material2 = Material{ .lambertian = .{ .albedo = .{ 0.4, 0.2, 0.1 }} };
+    const material2 = Material{ .lambertian = .{ .albedo = .{ 0.4, 0.2, 0.1 } } };
     try world.append(.{
         .sphere = .{
-            .center = .{ -4.0, 1.0, 0.0 },
+            .center = .{ .origin = .{ -4.0, 1.0, 0.0 } },
             .radius = 1.0,
             .material = material2,
         },
     });
-    const material3 = Material{ .metal = .{ .albedo = .{ 0.7, 0.6, 0.5}, .fuzz = 0.0 }};
+    const material3 = Material{ .metal = .{ .albedo = .{ 0.7, 0.6, 0.5 }, .fuzz = 0.0 } };
     try world.append(.{
         .sphere = .{
-            .center = .{ 4.0, 1.0, 0.0 },
+            .center = .{ .origin = .{ 4.0, 1.0, 0.0 } },
             .radius = 1.0,
             .material = material3,
         },
@@ -124,4 +124,3 @@ pub fn main(init: std.process.Init) !void {
 
     try camera.render(.{ .hit_list = world });
 }
-

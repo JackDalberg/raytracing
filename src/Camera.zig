@@ -152,7 +152,8 @@ fn getRay(self: Camera, i: usize, j: usize) Ray {
     }
 
     const direction = pixel_sample - origin;
-    return .{ .origin = origin, .direction = direction };
+    const time = self.rand.float(f64);
+    return .{ .origin = origin, .direction = direction, .time = time };
 }
 
 // Recursive
