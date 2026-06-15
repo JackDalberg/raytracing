@@ -36,8 +36,8 @@ pub fn main(init: std.process.Init) !void {
         .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
-        .samples_per_pixel = 100,
-        .max_bounce_depth = 2,
+        .samples_per_pixel = 400,
+        .max_bounce_depth = 50,
 
         .vertical_fov = 20.0,
         .look_from = .{ 13.0, 2.0, 3.0 },
