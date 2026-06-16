@@ -19,6 +19,10 @@ const Camera = @import("Camera.zig");
 const mat = @import("material.zig");
 const Material = mat.Material;
 
+const bvh = @import("bvh.zig");
+const BvhNode = bvh.BvhNode;
+const BvhTree = bvh.BvhTree;
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
@@ -56,11 +60,11 @@ pub fn main(init: std.process.Init) !void {
     var world = try HitList.init(init.gpa);
     defer world.deinit();
     try world.append(.{
-        .sphere = .{ // Ground
-            .center = .{ .origin = .{ 0.0, -1000.0, 0.0 } },
-            .radius = 1000.0,
-            .material = mat_ground,
-        },
+        .sphere = .init( // Ground
+            .{ .origin = .{ 0.0, -1000.0, 0.0 } },
+            1000.0,
+            mat_ground,
+        ),
     });
 
     for (0..22) |a| {
@@ -87,11 +91,11 @@ pub fn main(init: std.process.Init) !void {
                     sphere_material = .{ .dielectric = .{ .refraction_index = 1.5 } };
                 }
                 try world.append(.{
-                    .sphere = .{
-                        .center = .{ .origin = center, .direction = vec.splat(rand.float(f64) * 0.2) },
-                        .radius = 0.2,
-                        .material = sphere_material,
-                    },
+                    .sphere = .init(
+                        .{ .origin = center, .direction = vec.splat(rand.float(f64) * 0.2) },
+                        0.2,
+                        sphere_material,
+                    ),
                 });
             }
         }
@@ -99,28 +103,33 @@ pub fn main(init: std.process.Init) !void {
 
     const material1 = Material{ .dielectric = .{ .refraction_index = 1.5 } };
     try world.append(.{
-        .sphere = .{
-            .center = .{ .origin = .{ 0.0, 1.0, 0.0 } },
-            .radius = 1.0,
-            .material = material1,
-        },
+        .sphere = .init(
+            .{ .origin = .{ 0.0, 1.0, 0.0 } },
+            1.0,
+            material1,
+        ),
     });
     const material2 = Material{ .lambertian = .{ .albedo = .{ 0.4, 0.2, 0.1 } } };
     try world.append(.{
-        .sphere = .{
-            .center = .{ .origin = .{ -4.0, 1.0, 0.0 } },
-            .radius = 1.0,
-            .material = material2,
-        },
+        .sphere = .init(
+            .{ .origin = .{ -4.0, 1.0, 0.0 } },
+            1.0,
+            material2,
+        ),
     });
     const material3 = Material{ .metal = .{ .albedo = .{ 0.7, 0.6, 0.5 }, .fuzz = 0.0 } };
     try world.append(.{
-        .sphere = .{
-            .center = .{ .origin = .{ 4.0, 1.0, 0.0 } },
-            .radius = 1.0,
-            .material = material3,
-        },
+        .sphere = .init(
+            .{ .origin = .{ 4.0, 1.0, 0.0 } },
+            1.0,
+            material3,
+        ),
     });
 
-    try camera.render(.{ .hit_list = world });
+    var tree = BvhTree.init(init.gpa, rand);
+    defer tree.deinit();
+    const root = try tree.fromSlice(world.list.items);
+
+
+    try camera.render(root.*);
 }

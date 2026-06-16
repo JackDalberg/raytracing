@@ -4,15 +4,19 @@ const Ray = @import("Ray.zig");
 
 const hittable = @import("hittable.zig");
 
+const Aabb = @import("Aabb.zig");
+
 pub const HitList = @This();
 
 allocator: std.mem.Allocator,
 list: std.ArrayList(hittable.Hittable),
+aabb: ?Aabb,
 
 pub fn init(allocator: std.mem.Allocator) !HitList {
     return .{
         .allocator = allocator,
         .list = try std.ArrayList(hittable.Hittable).initCapacity(allocator, 0),
+        .aabb = null,
     };
 }
 
@@ -22,6 +26,11 @@ pub fn deinit(self: *HitList) void {
 
 pub fn append(self: *HitList, item: hittable.Hittable) !void {
     try self.list.append(self.allocator, item);
+    if (self.aabb) |aabb| {
+        self.aabb = Aabb.combine(aabb, item.boundingBox());
+    } else {
+        self.aabb = item.boundingBox();
+    }
 }
 
 pub fn hit(self: HitList, ray: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
@@ -33,4 +42,9 @@ pub fn hit(self: HitList, ray: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
         }
     }
     return hr;
+}
+
+// Maybe shouldnt unwrap unsafely, but makes it easier to catch hit lists with not items.
+pub fn boundingBox(self: HitList) Aabb {
+    return self.aabb.?;
 }

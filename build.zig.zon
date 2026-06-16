@@ -1,7 +1,7 @@
 .{
-    .name = .ray_tracing,
+    .name = .raytracing,
     .version = "0.0.1",
     .minimum_zig_version = "0.17.0-dev.389+f5a1968f6",
     .paths = .{""},
-    .fingerprint = 0x9f48bdebfc8c302c,
+    .fingerprint = 0x55933e101aa016a3,
 }
