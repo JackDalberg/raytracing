@@ -49,11 +49,15 @@ pub const BvhTree = struct {
     pub fn fromSlice(self: *BvhTree, items: []Hittable) !*Hittable {
         const len = items.len;
         if (len == 1) {
-            return self.createNode(&items[0], &items[0]);
+            const node = try self.createNode(&items[0], &items[0]);
+            self.root = node;
+            return node;
         }
 
         if (len == 2) {
-            return self.createNode(&items[0], &items[1]);
+            const node = try self.createNode(&items[0], &items[1]);
+            self.root = node;
+            return node;
         }
 
         const ctx = hittable.SortContext{ .items = items, .seed = self.rand.enumValue(hittable.SortContext.SortType) };

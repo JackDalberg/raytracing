@@ -24,6 +24,8 @@ pub const HitRecord = struct {
     normal: Vec3 = undefined,
     time: f64 = 0.0,
     material: Material = undefined,
+    u: f64 = 0.0,
+    v: f64 = 0.0,
 
     pub fn init(ray: Ray, time: f64, outward_normal: Vec3, material: Material) HitRecord {
         const front_face = (vec.dot(ray.direction, outward_normal) < 0);
@@ -65,6 +67,7 @@ pub const Hittable = union(enum) {
             .bvh_node => |b| b.boundingBox(),
         };
     }
+
 };
 
 pub const SortContext = struct {

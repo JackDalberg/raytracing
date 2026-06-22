@@ -8,6 +8,9 @@ const Ray = @import("Ray.zig");
 const hittable = @import("hittable.zig");
 const HitRecord = hittable.HitRecord;
 
+const texture = @import("texture.zig");
+const Texture = texture.Texture;
+
 pub const Scatter = struct {
     attenuation: Color,
     scattered: Ray,
@@ -28,8 +31,14 @@ pub const Material = union(enum) {
     }
 };
 
-const Lambertian = struct {
-    albedo: Color,
+pub const Lambertian = struct {
+    texture: *Texture,
+
+    pub fn fromColor(allocator: std.mem.Allocator, color: Color) !Lambertian {
+        const text = try allocator.create(Texture);
+        text.* = .{ .solid_color = .{.color = color} };
+        return .{ .texture = text };
+    }
 
     pub fn scatter(self: Lambertian, ray_in: Ray, rec: HitRecord, rand: std.Random) Scatter {
         var scatter_direction = rec.normal + vec.randomUnitVec(rand);
@@ -38,7 +47,7 @@ const Lambertian = struct {
             scatter_direction = rec.normal;
         }
         const scattered = Ray{ .origin = rec.point, .direction = scatter_direction, .time = ray_in.time };
-        const attenuation = self.albedo;
+        const attenuation = self.texture.value(rec.u, rec.v, rec.point);
 
         return .{
             .attenuation = attenuation,
