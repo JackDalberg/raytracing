@@ -43,7 +43,7 @@ pub fn main(init: std.process.Init) !void {
         .log = log,
         .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
-        .image_width = 100,
+        .image_width = 400,
         .samples_per_pixel = 100,
         .max_bounce_depth = 50,
 

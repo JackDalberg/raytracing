@@ -135,10 +135,26 @@ pub const Sphere = struct {
             }
         }
         const outward_normal = vec.scale(ray.atTime(root) - center, 1 / self.radius);
-        return .init(ray, root, outward_normal, self.material);
+        var record: HitRecord = .init(ray, root, outward_normal, self.material);
+        setUv(outward_normal, &record);
+        return record;
     }
 
     pub fn boundingBox(self: Sphere) Aabb {
         return self.aabb;
+    }
+
+    pub fn setUv(point: Point, record: *HitRecord) void {
+        // point: a given point on the sphere of radius one, centered at the origin.
+        // record.u: returned value [0,1] of angle around the Y axis from X=-1.
+        // record.v: returned value [0,1] of angle from Y=-1 to Y=+1.
+        //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+        //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+        //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+        const theta = std.math.acos(-point[1]);
+        const phi = std.math.atan2(-point[2], point[0]) + std.math.pi;
+
+        record.u = phi / (2 * std.math.pi);
+        record.v = theta / std.math.pi;
     }
 };
