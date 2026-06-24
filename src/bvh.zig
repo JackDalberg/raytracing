@@ -70,7 +70,7 @@ pub const BvhTree = struct {
         return node;
     }
 
-    pub fn hit(self: BvhTree, ray_in: Ray, t_min: f64, t_max: f64) HitRecord {
+    pub fn hit(self: BvhTree, ray_in: Ray, t_min: f32, t_max: f32) HitRecord {
         return self.root.?.hit(ray_in, t_min, t_max);
     }
 
@@ -92,7 +92,7 @@ pub const BvhNode = struct {
         };
     }
 
-    pub fn hit(self: BvhNode, ray_in: Ray, t_min: f64, t_max: f64) HitRecord {
+    pub fn hit(self: BvhNode, ray_in: Ray, t_min: f32, t_max: f32) HitRecord {
         if (!self.aabb.intersect(ray_in, t_min, t_max)) {
             return .{ .is_hit = false };
         }

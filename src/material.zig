@@ -59,9 +59,9 @@ pub const Lambertian = struct {
 
 const Metal = struct {
     albedo: Color,
-    fuzz: f64,
+    fuzz: f32,
 
-    pub fn init(albedo: Color, fuzz: f64) Metal {
+    pub fn init(albedo: Color, fuzz: f32) Metal {
         return .{
             .albedo = albedo,
             .fuzz = @min(1.0, fuzz),
@@ -82,7 +82,7 @@ const Metal = struct {
 };
 
 const Dielectric = struct {
-    refraction_index: f64,
+    refraction_index: f32,
 
     pub fn scatter(self: Dielectric, ray_in: Ray, rec: HitRecord, rand: std.Random) Scatter {
         _ = rand;
@@ -110,9 +110,9 @@ const Dielectric = struct {
         };
     }
 
-    fn reflectance(cosine: f64, refraction_index: f64) f64 {
+    fn reflectance(cosine: f32, refraction_index: f32) f32 {
         var r0 = (1 - refraction_index) / (1 + refraction_index);
         r0 = r0 * r0;
-        return r0 + (1 - r0) * std.math.pow(f64, (1 - cosine), 5);
+        return r0 + (1 - r0) * std.math.pow(f32, (1 - cosine), 5);
     }
 };

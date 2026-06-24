@@ -8,7 +8,7 @@ pub const Texture = union(enum) {
     // Aggregate types.
     checker: Checker,
 
-    pub fn value(self: Texture, u: f64, v: f64, point: Point) Color {
+    pub fn value(self: Texture, u: f32, v: f32, point: Point) Color {
         return switch (self) {
             .solid_color => |s| s.value(u, v, point),
             .checker => |c| c.value(u, v, point),
@@ -19,7 +19,7 @@ pub const Texture = union(enum) {
 pub const Solid = struct {
     color: Color,
 
-    pub fn value(self: Solid, _: f64, _: f64, _: Point) Color {
+    pub fn value(self: Solid, _: f32, _: f32, _: Point) Color {
         return self.color;
     }
 };
@@ -27,9 +27,9 @@ pub const Solid = struct {
 pub const Checker = struct {
     even: *Texture,
     odd: *Texture,
-    inverse_scale: f64,
+    inverse_scale: f32,
 
-    pub fn value(self: Checker, u: f64, v: f64, point: Point) Color {
+    pub fn value(self: Checker, u: f32, v: f32, point: Point) Color {
         const x: i32 = @intFromFloat(@floor(self.inverse_scale * point[0]));
         const y: i32 = @intFromFloat(@floor(self.inverse_scale * point[1]));
         const z: i32 = @intFromFloat(@floor(self.inverse_scale * point[2]));

@@ -44,7 +44,7 @@ pub fn main(init: std.process.Init) !void {
         .rand = rand,
         .aspect_ratio = 16.0 / 9.0,
         .image_width = 400,
-        .samples_per_pixel = 100,
+        .samples_per_pixel = 200,
         .max_bounce_depth = 50,
 
         .vertical_fov = 20.0,
@@ -57,18 +57,8 @@ pub fn main(init: std.process.Init) !void {
     };
     var camera = Camera.init(camera_opts);
 
-    //    const args = try init.minimal.args.toSlice(init.gpa);
-    //    defer init.gpa.free(args);
-    //    var scene: []const u8 = "";
-    //    if (args.len >= 2) {
-    //        scene = args[1];
-    //    }
-    //
-    //    if (std.mem.eql(u8, scene, "checker")) {
-    try checkeredSpheres(init.gpa, rand, &camera);
-    //   } else {
-    //        try manySpheres(init.gpa, rand, &camera);
-    //    }
+    //try checkeredSpheres(init.gpa, rand, &camera);
+    try manySpheres(init.gpa, rand, &camera);
 }
 
 pub fn checkeredSpheres(gpa: std.mem.Allocator, rand: std.Random, camera: *Camera) !void {
@@ -121,12 +111,12 @@ pub fn manySpheres(gpa: std.mem.Allocator, rand: std.Random, camera: *Camera) !v
     });
 
     for (0..22) |a| {
-        const a_float: f64 = @floatFromInt(@as(i8, @intCast(a)) - 11);
+        const a_float: f32 = @floatFromInt(@as(i8, @intCast(a)) - 11);
         for (0..22) |b| {
-            const b_float: f64 = @floatFromInt(@as(i8, @intCast(b)) - 11);
+            const b_float: f32 = @floatFromInt(@as(i8, @intCast(b)) - 11);
             // rand_double below
-            const choose_mat = rand.float(f64);
-            const center = Point{ a_float + 0.9 * rand.float(f64), 0.2, b_float + 0.9 * rand.float(f64) };
+            const choose_mat = rand.float(f32);
+            const center = Point{ a_float + 0.9 * rand.float(f32), 0.2, b_float + 0.9 * rand.float(f32) };
 
             if (vec.len(center - Point{ 4.0, 0.2, 0.0 }) > 0.9) {
                 var sphere_material: Material = undefined;
@@ -138,7 +128,7 @@ pub fn manySpheres(gpa: std.mem.Allocator, rand: std.Random, camera: *Camera) !v
                 } else if (choose_mat < 0.95) {
                     // metal
                     const albedo = Vec3{ 0.5, 0.5, 0.5 } + vec.scale(Vec3{ 1.0, 1.0, 1.0 } + vec.randomVec(rand), 0.25);
-                    const fuzz = rand.float(f64) * 0.5;
+                    const fuzz = rand.float(f32) * 0.5;
                     sphere_material = .{ .metal = .{ .albedo = albedo, .fuzz = fuzz } };
                 } else {
                     // glass
@@ -146,7 +136,7 @@ pub fn manySpheres(gpa: std.mem.Allocator, rand: std.Random, camera: *Camera) !v
                 }
                 try world.append(.{
                     .sphere = .init(
-                        //.{ .origin = center, .direction = vec.splat(rand.float(f64) * 0.2) },
+                        //.{ .origin = center, .direction = vec.splat(rand.float(f32) * 0.2) },
                         .{ .origin = center },
                         0.2,
                         sphere_material,

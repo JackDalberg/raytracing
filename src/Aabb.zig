@@ -8,12 +8,12 @@ const HitRecord = hittable.HitRecord;
 
 const Aabb = @This();
 
-x0: f64,
-x1: f64,
-y0: f64,
-y1: f64,
-z0: f64,
-z1: f64,
+x0: f32,
+x1: f32,
+y0: f32,
+y1: f32,
+z0: f32,
+z1: f32,
 
 pub fn init(a: Point, b: Point) Aabb {
     return .{
@@ -27,7 +27,7 @@ pub fn init(a: Point, b: Point) Aabb {
 }
 
 // Check whether the ray_in intersects ALL intervals in the given time range.
-pub fn intersect(self: Aabb, ray_in: Ray, t_min: f64, t_max: f64) bool {
+pub fn intersect(self: Aabb, ray_in: Ray, t_min: f32, t_max: f32) bool {
     const origin = ray_in.origin;
     const direction = ray_in.direction;
 

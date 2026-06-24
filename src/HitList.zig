@@ -33,7 +33,7 @@ pub fn append(self: *HitList, item: hittable.Hittable) !void {
     }
 }
 
-pub fn hit(self: HitList, ray: Ray, t_min: f64, t_max: f64) hittable.HitRecord {
+pub fn hit(self: HitList, ray: Ray, t_min: f32, t_max: f32) hittable.HitRecord {
     var hr: hittable.HitRecord = .{ .is_hit = false, .time = t_max };
     for (self.list.items) |candidate| {
         const possible_hr = candidate.hit(ray, t_min, hr.time);

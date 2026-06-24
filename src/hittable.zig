@@ -22,12 +22,12 @@ pub const HitRecord = struct {
     front_face: bool = false,
     point: Point = undefined,
     normal: Vec3 = undefined,
-    time: f64 = 0.0,
+    time: f32 = 0.0,
     material: Material = undefined,
-    u: f64 = 0.0,
-    v: f64 = 0.0,
+    u: f32 = 0.0,
+    v: f32 = 0.0,
 
-    pub fn init(ray: Ray, time: f64, outward_normal: Vec3, material: Material) HitRecord {
+    pub fn init(ray: Ray, time: f32, outward_normal: Vec3, material: Material) HitRecord {
         const front_face = (vec.dot(ray.direction, outward_normal) < 0);
         const point = ray.atTime(time);
         return .{
@@ -50,7 +50,7 @@ pub const Hittable = union(enum) {
     bvh_tree: BvhTree,
     bvh_node: BvhNode,
 
-    pub fn hit(self: Hittable, ray: Ray, t_min: f64, t_max: f64) HitRecord {
+    pub fn hit(self: Hittable, ray: Ray, t_min: f32, t_max: f32) HitRecord {
         return switch (self) {
             .sphere => |s| s.hit(ray, t_min, t_max),
             .hit_list => |hl| hl.hit(ray, t_min, t_max),
@@ -97,11 +97,11 @@ pub const SortContext = struct {
 
 pub const Sphere = struct {
     center: Ray,
-    radius: f64,
+    radius: f32,
     material: Material,
     aabb: Aabb,
 
-    pub fn init(center: Ray, radius: f64, material: Material) Sphere {
+    pub fn init(center: Ray, radius: f32, material: Material) Sphere {
         const radius_vec = vec.splat(radius);
         const box1 = Aabb.init(center.atTime(0.0) - radius_vec, center.atTime(0.0) + radius_vec);
         const box2 = Aabb.init(center.atTime(1.0) - radius_vec, center.atTime(1.0) + radius_vec);
@@ -114,7 +114,7 @@ pub const Sphere = struct {
         };
     }
 
-    pub fn hit(self: Sphere, ray: Ray, t_min: f64, t_max: f64) HitRecord {
+    pub fn hit(self: Sphere, ray: Ray, t_min: f32, t_max: f32) HitRecord {
         const center = self.center.atTime(ray.time);
         const oc = center - ray.origin;
         const a = vec.dot(ray.direction, ray.direction);
@@ -154,7 +154,7 @@ pub const Sphere = struct {
         const theta = std.math.acos(-point[1]);
         const phi = std.math.atan2(-point[2], point[0]) + std.math.pi;
 
-        record.u = phi / (2 * std.math.pi);
-        record.v = theta / std.math.pi;
+        record.*.u = phi / (2 * std.math.pi);
+        record.*.v = theta / std.math.pi;
     }
 };
