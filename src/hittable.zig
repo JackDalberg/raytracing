@@ -24,8 +24,8 @@ pub const HitRecord = struct {
     normal: Vec3 = undefined,
     time: f32 = 0.0,
     material: Material = undefined,
-    u: f32 = 0.0,
-    v: f32 = 0.0,
+    u: f64 = 0.0,
+    v: f64 = 0.0,
 
     pub fn init(ray: Ray, time: f32, outward_normal: Vec3, material: Material) HitRecord {
         const front_face = (vec.dot(ray.direction, outward_normal) < 0);
@@ -67,7 +67,6 @@ pub const Hittable = union(enum) {
             .bvh_node => |b| b.boundingBox(),
         };
     }
-
 };
 
 pub const SortContext = struct {
@@ -136,7 +135,11 @@ pub const Sphere = struct {
         }
         const outward_normal = vec.scale(ray.atTime(root) - center, 1 / self.radius);
         var record: HitRecord = .init(ray, root, outward_normal, self.material);
-        setUv(outward_normal, &record);
+        const theta = std.math.acos(-outward_normal[1]);
+        const phi = std.math.atan2(-outward_normal[2], outward_normal[0]) + std.math.pi;
+
+        record.u = phi / (2 * std.math.pi);
+        record.v = theta / std.math.pi;
         return record;
     }
 

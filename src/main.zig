@@ -26,9 +26,13 @@ const BvhTree = bvh.BvhTree;
 const texture = @import("texture.zig");
 const Texture = texture.Texture;
 const Checker = texture.Checker;
+const ImageTexture = texture.ImageTexture;
+
+const Image = @import("Image.zig");
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
+    const gpa = init.gpa;
 
     var buf: [4 * 1024]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(io, &buf);
@@ -57,8 +61,19 @@ pub fn main(init: std.process.Init) !void {
     };
     var camera = Camera.init(camera_opts);
 
-    //try checkeredSpheres(init.gpa, rand, &camera);
-    try manySpheres(init.gpa, rand, &camera);
+    //try checkeredSpheres(gpa, rand, &camera);
+    //try manySpheres(gpa, rand, &camera);
+    try earth(io, gpa, &camera);
+}
+
+pub fn earth(io: std.Io, gpa: std.mem.Allocator, camera: *Camera) !void {
+    var image = try Image.init(io, gpa, .ppm, "image.ppm");
+    defer image.deinit(gpa);
+    var earth_texture = Texture{ .image = .{ .image = &image } };
+    const earth_surface = Material{ .lambertian = .{ .texture = &earth_texture } };
+    const globe = Hittable{ .sphere = .init(.{ .origin = .{ 0.0, 0.0, 0.0 }}, 2.0, earth_surface) };
+
+    try camera.render(globe);
 }
 
 pub fn checkeredSpheres(gpa: std.mem.Allocator, rand: std.Random, camera: *Camera) !void {
